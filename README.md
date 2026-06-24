@@ -8,32 +8,26 @@ An AI-powered notebooklm style research assistant that combines Google Gemini 2.
 ## Home Interface
 ![Home](screenshots/Home page.png)
 
----
 
 ## Uploading & Managing Research Papers
-!(screenshots/Upload.png)
+![Upload](screenshots/Upload.png)
 
----
 
 ## Reading Scientific PDFs
 ![PDF Viewer](screenshots/Program.png)
 
----
 
 ## AI Gym Coach with Page Citations
 ![Chat](screenshots/Program2.png)
 
----
 
 ## Age of Article and White Mode
 ![White Mode](screenshots/Age of article and white mode.png)
 
----
 
 ## Question About Authors
 ![Authors](screenshots/Question about authors.png)
 
----
 
 # ✨ Features
 - Upload scientific PDF research papers
