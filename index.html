@@ -365,7 +365,7 @@
     .viewer-panel {
       flex: 1;
       border-right: 1px solid var(--border);
-      background-color: var(--bg-panel);
+      background-color: var(--bg-app);
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -382,14 +382,43 @@
     .page-content-scroll {
       flex: 1;
       overflow-y: auto;
+      background-color: var(--bg-app);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      transition: background-color 0.3s;
     }
 
     .page-slide-container {
       max-width: 800px;
       margin: 0 auto;
       width: 100%;
-      padding: 40px 60px;
+      padding: 30px 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
       will-change: transform, opacity;
+    }
+
+    /* Responsive PDF Page Frame */
+    .pdf-frame {
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      border: 1px solid var(--border);
+      background: #ffffff;
+      border-radius: 4px;
+      overflow: hidden;
+      max-width: 100%;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    :root[data-theme="dark"] .pdf-frame {
+      box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+    }
+
+    #pdf-render-canvas {
+      display: block;
+      max-width: 100%;
+      height: auto;
     }
 
     /* Pager Bar */
@@ -458,6 +487,7 @@
       flex: 1;
       padding: 40px;
       text-align: center;
+      background-color: var(--bg-panel);
     }
 
     .empty-state-icon {
@@ -474,48 +504,15 @@
       font-style: italic;
     }
 
-    .document-content-wrapper {
-      padding: 40px 60px;
-      max-width: 800px;
-      margin: 0 auto;
-      width: 100%;
-    }
-
-    .document-content-header {
-      border-bottom: 1px solid var(--border);
-      padding-bottom: 16px;
-      margin-bottom: 28px;
-    }
-
-    .document-title {
-      font-size: 1.6rem;
-      font-weight: normal;
-      margin-bottom: 8px;
-    }
-
-    .document-meta {
-      font-family: var(--font-mono);
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .page-content-block {
-      margin-bottom: 32px;
-      line-height: 1.7;
-      text-align: justify;
-      white-space: pre-wrap;
-    }
-
     .page-marker {
       font-family: var(--font-mono);
       font-size: 0.8rem;
       color: var(--text-muted);
       border-top: 1px dashed var(--border);
       border-bottom: 1px dashed var(--border);
-      padding: 8px 0;
-      margin: 32px 0 16px 0;
+      padding: 8px 16px;
+      margin-top: 24px;
+      width: 100%;
       text-align: center;
       user-select: none;
       letter-spacing: 0.1em;
@@ -543,6 +540,13 @@
       flex-direction: column;
       overflow: hidden;
       transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    .chat-panel-content {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      overflow: hidden;
     }
 
     .chat-header {
@@ -856,23 +860,25 @@
 
     <!-- Right Panel: Gym Coach Chatbox -->
     <section class="chat-panel">
-      <div class="chat-header">
-        <div class="chat-header-title">Gym Coach Chat</div>
-        <button id="chat-clear-btn" class="chat-clear-btn" disabled>[ CLEAR ]</button>
-      </div>
-      
-      <div id="chat-history" class="chat-history">
-        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; text-align: center; padding: 20px; color: var(--text-muted);">
-          <div style="font-family: var(--font-mono); font-size: 0.8rem; margin-bottom: 8px;">[ CHAT INACTIVE ]</div>
-          <p style="font-size: 0.8rem; font-style: italic; max-width: 260px;">Upload and select a study to activate the Gym Coach Chat.</p>
+      <div class="chat-panel-content">
+        <div class="chat-header">
+          <div class="chat-header-title">Gym Coach Chat</div>
+          <button id="chat-clear-btn" class="chat-clear-btn" disabled>[ CLEAR ]</button>
         </div>
-      </div>
+        
+        <div id="chat-history" class="chat-history">
+          <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; text-align: center; padding: 20px; color: var(--text-muted);">
+            <div style="font-family: var(--font-mono); font-size: 0.8rem; margin-bottom: 8px;">[ CHAT INACTIVE ]</div>
+            <p style="font-size: 0.8rem; font-style: italic; max-width: 260px;">Upload and select a study to activate the Gym Coach Chat.</p>
+          </div>
+        </div>
 
-      <div class="chat-input-area">
-        <textarea id="chat-input" class="chat-textarea" placeholder="Select a document to begin..." disabled></textarea>
-        <div class="chat-controls">
-          <div id="chat-model-info" class="chat-hint">gemini-2.5-flash</div>
-          <button id="chat-submit" class="chat-submit-btn" disabled>[ SEND ]</button>
+        <div class="chat-input-area">
+          <textarea id="chat-input" class="chat-textarea" placeholder="Select a document to begin..." disabled></textarea>
+          <div class="chat-controls">
+            <div id="chat-model-info" class="chat-hint">gemini-2.5-flash</div>
+            <button id="chat-submit" class="chat-submit-btn" disabled>[ SEND ]</button>
+          </div>
         </div>
       </div>
     </section>
@@ -1126,7 +1132,8 @@
         pageTexts: [],
         fullText: "",
         chatHistory: [],
-        currentPageIndex: 1
+        currentPageIndex: 1,
+        pdfDocInstance: null
       };
       
       // Add to global documents roster
@@ -1187,6 +1194,7 @@
           targetDoc.processing = false;
           targetDoc.pageTexts = pageTexts;
           targetDoc.fullText = fullText;
+          targetDoc.pdfDocInstance = pdf; // Save PDF rendering instance reference
         }
       } catch (err) {
         console.error("PDF.js parsing failed:", err);
@@ -1280,6 +1288,45 @@
       renderChatHistory();
     }
 
+    // High-fidelity page vector renderer using PDF.js
+    async function renderPdfPageToCanvas(doc, pageNum) {
+      const canvas = document.getElementById('pdf-render-canvas');
+      if (!canvas || !doc || !doc.pdfDocInstance) return;
+      
+      try {
+        const page = await doc.pdfDocInstance.getPage(pageNum);
+        const context = canvas.getContext('2d');
+        
+        // Dynamic viewport bounds calculation
+        const containerWidth = canvas.parentElement.clientWidth || 800;
+        const unscaledViewport = page.getViewport({ scale: 1.0 });
+        
+        let optimalScale = (containerWidth - 10) / unscaledViewport.width;
+        if (optimalScale > 1.8) optimalScale = 1.8;
+        if (optimalScale < 0.6) optimalScale = 0.6;
+        
+        const viewport = page.getViewport({ scale: optimalScale });
+        
+        // Match high pixel density retina displays
+        const pixelRatio = window.devicePixelRatio || 1;
+        canvas.width = viewport.width * pixelRatio;
+        canvas.height = viewport.height * pixelRatio;
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
+        
+        context.scale(pixelRatio, pixelRatio);
+        
+        const renderContext = {
+          canvasContext: context,
+          viewport: viewport
+        };
+        
+        await page.render(renderContext).promise;
+      } catch (err) {
+        console.error("Local page canvas render pipeline failed:", err);
+      }
+    }
+
     // Render center panel parsed text body (one page at a time with header & pager)
     function renderDocumentViewer(direction = null) {
       const viewer = document.getElementById('doc-viewer');
@@ -1316,7 +1363,6 @@
 
       const pageCount = activeDocument.pageTexts.length;
       const pageIndex = activeDocument.currentPageIndex;
-      const activePage = activeDocument.pageTexts[pageIndex - 1] || { pageNumber: pageIndex, text: "[No page content]" };
       const animateClass = direction === 'next' ? 'slide-next' : (direction === 'prev' ? 'slide-prev' : '');
 
       viewer.innerHTML = `
@@ -1327,7 +1373,7 @@
               ${escapeHtml(activeDocument.name)}
             </h2>
             <span style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; flex-shrink: 0;">
-              DOCUMENT CORPUS
+              VECTOR RENDER
             </span>
           </div>
 
@@ -1341,14 +1387,19 @@
           <!-- Scrollable Page Viewer -->
           <div class="page-content-scroll">
             <div class="page-slide-container ${animateClass}" id="page-slide-content">
-              <div class="page-marker" id="page-marker-${activePage.pageNumber}" data-page="${activePage.pageNumber}">
-                --- PAGE ${activePage.pageNumber} START ---
+              <div class="pdf-frame">
+                <canvas id="pdf-render-canvas"></canvas>
               </div>
-              <div class="page-content-block">${escapeHtml(activePage.text || '[No text extracted on this page]')}</div>
+              <div class="page-marker" id="page-marker-${pageIndex}" data-page="${pageIndex}">
+                [ PAGE ${pageIndex} OF ${pageCount} ]
+              </div>
             </div>
           </div>
         </div>
       `;
+
+      // Trigger asynchronous PDF.js canvas vector render
+      renderPdfPageToCanvas(activeDocument, pageIndex);
 
       // Attach Event Listeners
       document.getElementById('pager-prev-btn')?.addEventListener('click', () => {
@@ -1375,6 +1426,18 @@
       activeDocument.currentPageIndex = pageNum;
       renderDocumentViewer(direction);
     }
+
+    // Dynamic viewport recalculation on browser window size adjustments
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        const activeDocument = documents.find(d => d.id === activeDocId);
+        if (activeDocument && !activeDocument.processing) {
+          renderPdfPageToCanvas(activeDocument, activeDocument.currentPageIndex);
+        }
+      }, 150);
+    });
 
     // Render right panel message feed
     function renderChatHistory() {
@@ -1558,7 +1621,7 @@
                 marker.classList.remove('highlighted-page-marker');
               }, 1800);
             }
-          }, 50);
+          }, 150);
         }
       }
     });
