@@ -886,8 +886,101 @@
     // Configure PDF.js Worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.mjs";
 
-    // Application State Management (Single-Document Workflow)
-    let activeDocument = null; // Active processed PDF document state
+    // Custom non-blocking Notifications overlay
+    function showNotification(message, type = "error") {
+      const toast = document.createElement('div');
+      toast.style.position = 'fixed';
+      toast.style.bottom = '24px';
+      toast.style.right = '24px';
+      toast.style.backgroundColor = type === 'error' ? '#ef4444' : 'var(--accent)';
+      toast.style.color = '#ffffff';
+      toast.style.padding = '12px 20px';
+      toast.style.borderRadius = '4px';
+      toast.style.boxShadow = '0 6px 16px rgba(0,0,0,0.15)';
+      toast.style.zIndex = '99999';
+      toast.style.fontFamily = 'var(--font-mono)';
+      toast.style.fontSize = '0.8rem';
+      toast.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+      toast.style.transform = 'translateY(10px)';
+      toast.style.opacity = '0';
+      toast.textContent = message;
+      
+      document.body.appendChild(toast);
+      
+      // Trigger animation frame for transition
+      requestAnimationFrame(() => {
+        toast.style.transform = 'translateY(0)';
+        toast.style.opacity = '1';
+      });
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // Custom non-blocking modal system for confirming actions
+    function showConfirmDialog(message, onConfirm) {
+      const overlay = document.createElement('div');
+      overlay.style.position = 'fixed';
+      overlay.style.top = '0';
+      overlay.style.left = '0';
+      overlay.style.width = '100vw';
+      overlay.style.height = '100vh';
+      overlay.style.backgroundColor = 'rgba(0,0,0,0.4)';
+      overlay.style.display = 'flex';
+      overlay.style.justifyContent = 'center';
+      overlay.style.alignItems = 'center';
+      overlay.style.zIndex = '99998';
+      overlay.style.backdropFilter = 'blur(2px)';
+
+      const dialog = document.createElement('div');
+      dialog.style.backgroundColor = 'var(--bg-panel)';
+      dialog.style.border = '1px solid var(--border)';
+      dialog.style.padding = '24px';
+      dialog.style.borderRadius = '6px';
+      dialog.style.maxWidth = '360px';
+      dialog.style.width = '90%';
+      dialog.style.textAlign = 'center';
+      dialog.style.boxShadow = '0 10px 25px rgba(0,0,0,0.2)';
+
+      const text = document.createElement('p');
+      text.style.fontFamily = 'var(--font-serif)';
+      text.style.fontSize = '0.95rem';
+      text.style.marginBottom = '20px';
+      text.style.color = 'var(--text-main)';
+      text.textContent = message;
+
+      const btnContainer = document.createElement('div');
+      btnContainer.style.display = 'flex';
+      btnContainer.style.justifyContent = 'center';
+      btnContainer.style.gap = '12px';
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'pager-btn';
+      cancelBtn.textContent = '[ CANCEL ]';
+      cancelBtn.addEventListener('click', () => overlay.remove());
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.className = 'chat-submit-btn';
+      confirmBtn.textContent = '[ CONFIRM ]';
+      confirmBtn.addEventListener('click', () => {
+        onConfirm();
+        overlay.remove();
+      });
+
+      btnContainer.appendChild(cancelBtn);
+      btnContainer.appendChild(confirmBtn);
+      dialog.appendChild(text);
+      dialog.appendChild(btnContainer);
+      overlay.appendChild(dialog);
+      document.body.appendChild(overlay);
+    }
+
+    // Application State Management (Multi-Document Workflow)
+    let documents = []; // Array of processed active PDF documents
+    let activeDocId = null; // Currently selected active document ID
     let geminiApiKey = ""; // Gemini API Key (held strictly in memory)
     let isThemeDark = false; // Current theme status
 
@@ -1008,13 +1101,13 @@
       }
     });
 
-    // Process Selected PDF Files (Single-Document Workflow)
+    // Process Selected PDF Files (Multi-Document Workflow)
     async function handleFilesSelected(files) {
-      if (files.length > 0) {
-        const file = files[0];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         if (file.type !== "application/pdf" && !file.name.endsWith(".pdf")) {
-          alert(`"${file.name}" is not a PDF document.`);
-          return;
+          showNotification(`"${file.name}" is not a PDF document.`);
+          continue;
         }
         await processPdfFile(file);
       }
@@ -1024,8 +1117,10 @@
 
     // PDF Extraction and page layout stamping (with page budgeting)
     async function processPdfFile(file) {
-      // Clear previous document state immediately (replaces previous document)
-      activeDocument = {
+      const docId = 'doc_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      
+      const newDoc = {
+        id: docId,
         name: file.name,
         processing: true,
         pageTexts: [],
@@ -1033,6 +1128,14 @@
         chatHistory: [],
         currentPageIndex: 1
       };
+      
+      // Add to global documents roster
+      documents.push(newDoc);
+      
+      // Auto-select the first uploaded document
+      if (!activeDocId) {
+        activeDocId = docId;
+      }
       
       renderDocumentsList();
       renderDocumentViewer();
@@ -1078,19 +1181,21 @@
         // Build the stamped document corpus
         const fullText = pageTexts.map(pt => `--- PAGE ${pt.pageNumber} START ---\n${pt.text}\n`).join("\n");
         
-        // Save complete document state
-        activeDocument = {
-          name: file.name,
-          processing: false,
-          pageTexts: pageTexts,
-          fullText: fullText,
-          chatHistory: [],
-          currentPageIndex: 1
-        };
+        // Find document and save final parsed state
+        const targetDoc = documents.find(d => d.id === docId);
+        if (targetDoc) {
+          targetDoc.processing = false;
+          targetDoc.pageTexts = pageTexts;
+          targetDoc.fullText = fullText;
+        }
       } catch (err) {
         console.error("PDF.js parsing failed:", err);
-        alert(`Failed to extract text from "${file.name}": ${err.message}`);
-        activeDocument = null;
+        showNotification(`Failed to extract text from "${file.name}": ${err.message}`);
+        // Remove document on load failure
+        documents = documents.filter(d => d.id !== docId);
+        if (activeDocId === docId) {
+          activeDocId = documents.length > 0 ? documents[0].id : null;
+        }
       } finally {
         renderDocumentsList();
         renderDocumentViewer();
@@ -1108,12 +1213,12 @@
       });
     }
 
-    // Render left panel document list (Single-Document Workflow)
+    // Render left panel document list (Multi-Document Workflow)
     function renderDocumentsList() {
       const container = document.getElementById('doc-list');
       container.innerHTML = '';
 
-      if (!activeDocument) {
+      if (documents.length === 0) {
         container.innerHTML = `
           <div style="font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 16px;">
             [ NO DOCUMENTS ]
@@ -1122,32 +1227,54 @@
         return;
       }
 
-      const docEl = document.createElement('div');
-      docEl.className = `doc-item active ${activeDocument.processing ? 'processing' : ''}`;
-      
-      const nameEl = document.createElement('span');
-      nameEl.className = 'doc-name';
-      nameEl.textContent = activeDocument.processing ? `[PROCESSING...] ${activeDocument.name}` : activeDocument.name;
-      nameEl.title = activeDocument.name;
-      
-      const delBtn = document.createElement('button');
-      delBtn.className = 'doc-delete-btn';
-      delBtn.textContent = '[DEL]';
-      delBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        deleteDocument();
-      });
+      documents.forEach(doc => {
+        const isActive = doc.id === activeDocId;
+        const docEl = document.createElement('div');
+        docEl.className = `doc-item ${isActive ? 'active' : ''} ${doc.processing ? 'processing' : ''}`;
+        docEl.addEventListener('click', () => {
+          if (!doc.processing) {
+            selectDocument(doc.id);
+          }
+        });
+        
+        const nameEl = document.createElement('span');
+        nameEl.className = 'doc-name';
+        nameEl.textContent = doc.processing ? `[PROCESSING...] ${doc.name}` : doc.name;
+        nameEl.title = doc.name;
+        
+        const delBtn = document.createElement('button');
+        delBtn.className = 'doc-delete-btn';
+        delBtn.textContent = '[DEL]';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteDocument(doc.id);
+        });
 
-      docEl.appendChild(nameEl);
-      if (!activeDocument.processing) {
-        docEl.appendChild(delBtn);
-      }
-      container.appendChild(docEl);
+        docEl.appendChild(nameEl);
+        if (!doc.processing) {
+          docEl.appendChild(delBtn);
+        }
+        container.appendChild(docEl);
+      });
     }
 
-    // Delete single document instance
-    function deleteDocument() {
-      activeDocument = null;
+    // Switch selected active document
+    function selectDocument(docId) {
+      const doc = documents.find(d => d.id === docId);
+      if (doc && !doc.processing) {
+        activeDocId = docId;
+        renderDocumentsList();
+        renderDocumentViewer();
+        renderChatHistory();
+      }
+    }
+
+    // Delete single document instance from portfolio
+    function deleteDocument(docId) {
+      documents = documents.filter(d => d.id !== docId);
+      if (activeDocId === docId) {
+        activeDocId = documents.length > 0 ? documents[0].id : null;
+      }
       renderDocumentsList();
       renderDocumentViewer();
       renderChatHistory();
@@ -1156,6 +1283,7 @@
     // Render center panel parsed text body (one page at a time with header & pager)
     function renderDocumentViewer(direction = null) {
       const viewer = document.getElementById('doc-viewer');
+      const activeDocument = documents.find(d => d.id === activeDocId);
       
       if (!activeDocument) {
         viewer.innerHTML = `
@@ -1237,6 +1365,7 @@
     }
 
     function goToPage(pageNum, direction = null) {
+      const activeDocument = documents.find(d => d.id === activeDocId);
       if (!activeDocument) return;
       
       const pageCount = activeDocument.pageTexts.length;
@@ -1253,6 +1382,7 @@
       const chatInput = document.getElementById('chat-input');
       const chatSubmit = document.getElementById('chat-submit');
       const clearBtn = document.getElementById('chat-clear-btn');
+      const activeDocument = documents.find(d => d.id === activeDocId);
       
       chatHistory.innerHTML = '';
 
@@ -1414,22 +1544,21 @@
       if (citation) {
         e.preventDefault();
         const pageNum = parseInt(citation.getAttribute('data-page'), 10);
-        if (pageNum) {
-          if (activeDocument) {
-            goToPage(pageNum);
-            
-            // Wait a tick for rendering, then smooth scroll and highlight the page start marker
-            setTimeout(() => {
-              const marker = document.getElementById(`page-marker-${pageNum}`);
-              if (marker) {
-                marker.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                marker.classList.add('highlighted-page-marker');
-                setTimeout(() => {
-                  marker.classList.remove('highlighted-page-marker');
-                }, 1800);
-              }
-            }, 50);
-          }
+        const activeDocument = documents.find(d => d.id === activeDocId);
+        if (pageNum && activeDocument) {
+          goToPage(pageNum);
+          
+          // Wait a tick for rendering, then smooth scroll and highlight the page start marker
+          setTimeout(() => {
+            const marker = document.getElementById(`page-marker-${pageNum}`);
+            if (marker) {
+              marker.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              marker.classList.add('highlighted-page-marker');
+              setTimeout(() => {
+                marker.classList.remove('highlighted-page-marker');
+              }, 1800);
+            }
+          }, 50);
         }
       }
     });
@@ -1439,12 +1568,13 @@
       const chatInput = document.getElementById('chat-input');
       const chatSubmit = document.getElementById('chat-submit');
       const userInput = chatInput.value.trim();
+      const activeDocument = documents.find(d => d.id === activeDocId);
 
       if (!userInput) return;
       if (!activeDocument) return;
 
       if (!geminiApiKey) {
-        alert("Please paste your Gemini API Key in the top header input first.");
+        showNotification("Please paste your Gemini API Key in the top header input first.");
         apiKeyInput.focus();
         return;
       }
@@ -1602,11 +1732,12 @@
       }
     });
     document.getElementById('chat-clear-btn').addEventListener('click', () => {
+      const activeDocument = documents.find(d => d.id === activeDocId);
       if (activeDocument && activeDocument.chatHistory.length > 0) {
-        if (confirm("Clear workout chat history for this study?")) {
+        showConfirmDialog("Clear workout chat history for this study?", () => {
           activeDocument.chatHistory = [];
           renderChatHistory();
-        }
+        });
       }
     });
 
