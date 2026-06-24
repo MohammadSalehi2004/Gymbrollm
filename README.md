@@ -6,7 +6,7 @@ An AI-powered notebooklm style research assistant that combines Google Gemini 2.
 # Screenshots
 
 ## Home Interface
-![Home](screenshots/Home page.png)
+![Home](screenshots/HomePage.png)
 
 
 ## Uploading & Managing Research Papers
@@ -22,11 +22,11 @@ An AI-powered notebooklm style research assistant that combines Google Gemini 2.
 
 
 ## Age of Article and White Mode
-![White Mode](screenshots/Age of article and white mode.png)
+![White Mode](screenshots/AgeOfArticleAndWhiteMode.png)
 
 
 ## Question About Authors
-![Authors](screenshots/Question about authors.png)
+![Authors](screenshots/QuestionAboutAuthors.png)
 
 
 # ✨ Features
