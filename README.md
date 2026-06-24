@@ -1,5 +1,5 @@
 # GymBroLLM
-An AI-powered notebooklm style research assistant that combines Google Gemini 2.5 Flash with the ability to upload pdf files to generate evidence-based gym recommendations or to learn more about health topics with the help of AI. Upload a research paper, read it inside the application, and chat with an AI coach that answers strictly using the uploaded study while providing page citations.
+An AI-powered NotebookLM style research assistant that combines Google Gemini 2.5 Flash with the ability to upload PDF files to generate evidence-based gym recommendations or to learn more about health topics with the help of AI. Upload a research paper, read it inside the application, and chat with an AI coach that answers strictly using the uploaded study while providing page citations.
 
 ---
 
@@ -29,7 +29,7 @@ An AI-powered notebooklm style research assistant that combines Google Gemini 2.
 ![Authors](screenshots/QuestionAboutAuthors.png)
 
 
-# ✨ Features
+# Features
 - Upload scientific PDF research papers
 - Built-in PDF viewer with page navigation
 - AI-powered Gym Coach using Google Gemini 2.5 Flash
@@ -43,7 +43,7 @@ An AI-powered notebooklm style research assistant that combines Google Gemini 2.
 
 ---
 
-# 🖥️ Application Layout
+# Application Layout
 The application consists of three primary panels.
 
 ### Left side which is for document manager
@@ -68,7 +68,7 @@ The application consists of three primary panels.
 # Technologies Used
 - HTML5
 - CSS3
-- Vanilla JavaScript (ES Modules)
+- JavaScript
 - PDF.js
 - Google Gemini API (Gemini 2.5 Flash)
 - Antigravity
@@ -101,18 +101,18 @@ GymBroLLM/
   README.md
 
   screenshots/
-    Age of article and white mode.png
-    Home page.png
+    AgeOfArticleAndWhiteMode.png
+    HomePage.png
     Program.png
     Program2.png
-    Question about authors.png
+    QuestionAboutAuthors.png
     Upload.png
 ```
 
 ---
 
-# 🎯 Purpose
-GymBroLLM demonstrates how Large Language Models can be combined with scientific literature to provide transparent, evidence-based fitness recommendations. Unlike traditional AI chatbots, responses are grounded in the uploaded research paper and reference specific pages, allowing users to verify every recommendation.
+# Purpose
+GymBroLLM is something I made using Antigravity after attending a workshop hosted by GeeksforGeeks. We were told to create and develop an AI-powered research and document assistant prototype with an interactive UI and Agentic AI workflow integration. GymBroLLM demonstrates how Large Language Models can be combined with scientific literature to provide transparent, evidence-based fitness recommendations. Unlike traditional AI chatbots, responses are grounded in the uploaded research paper and reference specific pages depending on which PDF file is selected, allowing users to verify every recommendation.
 
 ---
 
