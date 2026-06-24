@@ -6,7 +6,10 @@
   <title>GymBroLLM — Academic Workout Workspace</title>
   
   <!-- PDF.js CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.js"></script>
+  <script type="module">
+    import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.mjs";
+    window.pdfjsLib = pdfjsLib;
+  </script>
 
   <style>
     /* Modern CSS Design System & Variables */
@@ -754,8 +757,10 @@
 
   <!-- ES Modules Application Script -->
   <script type="module">
+    import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.mjs";
+
     // Configure PDF.js Worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.js";
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.mjs";
 
     // Application State Management
     let documents = []; // Array of processed PDF documents
