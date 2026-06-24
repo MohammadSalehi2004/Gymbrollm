@@ -7,12 +7,12 @@ An AI-powered notebooklm style research assistant that combines Google Gemini 2.
 ## Home Interface
 ![Home](screenshots/Home page.png)
 
----
+
 
 ## Uploading & Managing Research Papers
 ![Upload](screenshots/Upload.png)
 
----
+
 
 ## Reading Scientific PDFs
 ![PDF Viewer](screenshots/Program.png)
