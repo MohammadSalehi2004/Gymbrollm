@@ -1,7 +1,6 @@
 # GymBroLLM
 An AI-powered notebooklm style research assistant that combines Google Gemini 2.5 Flash with the ability to upload pdf files to generate evidence-based gym recommendations or to learn more about health topics with the help of AI. Upload a research paper, read it inside the application, and chat with an AI coach that answers strictly using the uploaded study while providing page citations.
 
----
 
 # Screenshots
 
